@@ -23,7 +23,7 @@ import socket
 import sys
 import time
 
-PATH_TO_REPO = Path(os.path.realpath(__file__)).parent.parent
+PATH_TO_REPO = Path(os.path.realpath(__file__)).parent.parent.parent
 if str(PATH_TO_REPO) not in sys.path:
     sys.path.insert(1, str(PATH_TO_REPO))
 
@@ -220,7 +220,7 @@ class ConnectionManager:
             return None
 
 
-    async def try_connect(self, sturdy_ref, cast_as = None, retry_count=10, retry_secs=5, print_retry_msgs=True):
+    async def try_connect(self, sturdy_ref, cast_as=None, retry_count=10, retry_secs=5, print_retry_msgs=True):
         while True:
             try:
                 return await self.connect(sturdy_ref, cast_as=cast_as)
