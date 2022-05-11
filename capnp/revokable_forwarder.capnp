@@ -3,9 +3,9 @@
 using Cxx = import "c++.capnp";
 $Cxx.namespace("ems_ocaps_paper::schema");
 
-using Go = import "go.capnp";
-$Go.package("climate");
-$Go.import("github.com/zalf-rpm/EMS_ocaps_paper_2022_code/go");
+using Go = import "/go.capnp";
+$Go.package("capnp");
+$Go.import("github.com/zalf-rpm/EMS_ocaps_paper_2022_code/go/capnp");
 
 interface Actor {
     do @0 (msg :Text);
