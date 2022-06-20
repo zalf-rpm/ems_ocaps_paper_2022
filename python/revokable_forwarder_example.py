@@ -37,66 +37,10 @@ import capnp_async_helpers as async_helpers
 # this removes the old single threaded one and creates a new one for the main thread with multithreading support
 capnp.reset_event_loop(ignore_errors=False, threaded=True)
 
-class Alice(schema.Alice.Server):
-
-    def __init__(self):
-        self.bob = None
-        self.carol = None
-
-    #def do(self, msg, **kwargs): # do @0 (msg :Text);
-    def do_context(self, context): # do @0 (msg :Text);
-        print("@Alice::do | msg:", context.params.msg)
-        print("@Alice::do | sending foo(carol) to Bob")
-        if self.bob and self.carol:
-            return self.bob.foo(self.carol).then(lambda _: ())
-
-    def set_context(self, context): # set @0 (bob :Bob, carol :Carol);
-        print("@Alice::set")
-        self.bob = context.params.bob
-        self.carol = context.params.carol
-
-
-class Bob(schema.Bob.Server):
-
-    def __init__(self):
-        self.carol = None
-
-    def do_context(self, context): # do @0 (msg :Text);
-        print("@Bob::do | msg:", context.params.msg)
-        if self.carol:
-            print("@Bob::do | sending do(msg) to Carol")
-            return self.carol.do("<Bobs DO message to Carol>").then(lambda _: ())
-
-    def foo(self, carol, **kwargs): # foo @1 (carol :Carol);
-        print("@Bob::foo")
-        self.carol = carol
-
-
-class Carol(schema.Carol.Server):
-
-    def __init__(self):
-        pass
-
-    def do(self, msg, **kwargs): # do @0 (msg :Text);
-        print("@Carol::do | msg:", msg)
-
-
-class Forwarder(schema.Forwarder.Server):
-
-    def __init__(self):
-        pass
-
-    def do(self, **kwargs): # do @0 ();
-        pass
-
-
-class Revoker(schema.Revoker.Server):
-
-    def __init__(self):
-        pass
-
-    def do(self, **kwargs): # do @0 ();
-        pass
+from alice import Alice
+from bob import Bob
+from carol import Carol
+#from forwarder_revoker import Forwarder, Revoker
 
 
 def run_alice(s, aio=False):

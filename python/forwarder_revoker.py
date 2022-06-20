@@ -33,25 +33,32 @@ schema = capnp.load(str(PATH_TO_REPO / "capnp" / "revokable_forwarder.capnp"))
 import helper.capnp_async_helpers as async_helpers
 import helper.common as common
 
+
 #------------------------------------------------------------------------------
 
 class Forwarder(schema.Forwarder.Server):
 
     def __init__(self):
-        pass
+        self.revoker = None
 
     def do(self, **kwargs): # do @0 ();
         pass
 
+    def set_context(self, context): # set @0 (r :Revoker);
+        print("@Forwarder::set")
+        self.revoker = context.params.r
 
 class Revoker(schema.Revoker.Server):
 
     def __init__(self):
-        pass
+        self.carol = None
 
     def do(self, **kwargs): # do @0 ();
         pass
 
+    def set_context(self, context): # set @0 (carol :Carol);
+        print("@Revoker::set")
+        self.carol = context.params.carol
 
 
 

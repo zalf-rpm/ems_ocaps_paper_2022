@@ -24,10 +24,18 @@ interface Carol extends(Actor) {
 
 interface Forwarder extends(Carol) {
     # forward Carol messages
+
+    set @0 (r :Revoker);
+    # set the revoker we want to forward to
 }
 
 interface Revoker extends(Forwarder) {
     # revoke forwarder messages
+
     revoke @0 ();
+    # revoke any further forwarding
+
+    set @0 (carol :Carol);
+    # set Carol the capability to revokably forward to
 }
 

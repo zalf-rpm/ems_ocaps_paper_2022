@@ -28,10 +28,11 @@ schema = capnp.load(str(PATH_TO_REPO / "capnp" / "revokable_forwarder.capnp"))
 
 import helper.capnp_async_helpers as async_helpers
 import helper.common as common
+from forwarder_revoker import Forwarder, Revoker
 
 #------------------------------------------------------------------------------
 
-class Alice(schema.Alice.Server):
+class PlainAlice(schema.Alice.Server):
 
     def __init__(self):
         self.bob = None
@@ -48,6 +49,28 @@ class Alice(schema.Alice.Server):
         print("@Alice::set")
         self.bob = context.params.bob
         self.carol = context.params.carol
+
+
+class Alice(schema.Alice.Server):
+
+    def __init__(self):
+        self.bob = None
+        self.carol = None
+        self.forwarder = None
+        self.revoker = None
+
+    #def do(self, msg, **kwargs): # do @0 (msg :Text);
+    def do_context(self, context): # do @0 (msg :Text);
+        print("@Alice::do | msg:", context.params.msg)
+        print("@Alice::do | sending foo(carol) to Bob")
+        if self.bob and self.carol:
+            return self.bob.foo(self.carol).then(lambda _: ())
+
+    def set_context(self, context): # set @0 (bob :Bob, carol :Carol);
+        print("@Alice::set")
+        self.bob = context.params.bob
+        self.carol = context.params.carol
+
 
 #------------------------------------------------------------------------------
 
