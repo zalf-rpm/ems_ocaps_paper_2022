@@ -3,16 +3,18 @@
 using Cxx = import "c++.capnp";
 $Cxx.namespace("ems_ocaps_paper::schema");
 
-using Go = import "/go.capnp";
+using Go = import "go.capnp";
 $Go.package("capnp");
 $Go.import("github.com/zalf-rpm/EMS_ocaps_paper_2022_code/go/capnp");
 
 interface Actor {
-    do @0 (msg :Text);
+    act @0 (msg :Text);
 }
 
 interface Alice extends(Actor) {
-    set @0 (bob :Bob, carol :Carol);
+    setBobAndCarol  @0 (bob :Bob, carol :Carol);
+
+    revokeCarol     @1 ();
 } 
 
 interface Bob extends(Actor) {
@@ -25,8 +27,8 @@ interface Carol extends(Actor) {
 interface Forwarder extends(Carol) {
     # forward Carol messages
 
-    set @0 (r :Revoker);
-    # set the revoker we want to forward to
+    setActor @0 (a :Actor);
+    # set the Actor we want to forward to
 }
 
 interface Revoker extends(Forwarder) {
@@ -34,8 +36,5 @@ interface Revoker extends(Forwarder) {
 
     revoke @0 ();
     # revoke any further forwarding
-
-    set @0 (carol :Carol);
-    # set Carol the capability to revokably forward to
 }
 

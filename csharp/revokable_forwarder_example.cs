@@ -13,19 +13,24 @@ namespace Ems_ocaps_paper
         readonly object _lock = new object();
         private Schema.IBob _bob;
         private Schema.ICarol _carol;
+        private Schema.IForwarder _forwarder = new Forwarder();
+        private Schema.IRevoker _revoker = new Revoker();
 
         // do @0 (msg :Text);
-        public async Task Do(string msg, CancellationToken cancellationToken_ = default) {
-            Console.WriteLine("@Alice::do | msg: " + msg);
-            Console.WriteLine("@Alice::do | sending foo(carol) to Bob");
+        public async Task Act(string msg, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Alice::act | msg: " + msg);
+            Console.WriteLine("@Alice::act | sending foo(carol) to Bob");
             if(_bob != null && _carol != null) {
-                await _bob.Foo(Proxy.Share(_carol), cancellationToken_);
+                await _forwarder.SetActor(Proxy.Share(_revoker), cancellationToken_);
+                await _revoker.SetActor(Proxy.Share(_carol), cancellationToken_);
+                //await _bob.Foo(Proxy.Share(_carol), cancellationToken_);
+                await _bob.Foo(Proxy.Share(_forwarder), cancellationToken_);
             }
         }
 
         // set @0 (bob :Bob, carol :Carol);
-        public Task Set(Schema.IBob bob, Schema.ICarol carol, CancellationToken cancellationToken_ = default) {
-            Console.WriteLine("@Alice::set");
+        public Task SetBobAndCarol(Schema.IBob bob, Schema.ICarol carol, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Alice::setBobAndCarol");
             lock(_lock){
                 if (bob != _bob) {
                     _bob?.Dispose();
@@ -37,6 +42,12 @@ namespace Ems_ocaps_paper
                 }
             }
             return Task.CompletedTask;
+        }
+
+        // revokeCarol     @1 ();
+        public Task RevokeCarol(CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Alice::revokeCarol");
+            return _revoker.Revoke();
         }
 
         public void Dispose() {
@@ -53,15 +64,17 @@ namespace Ems_ocaps_paper
     }
 
     class Bob : Schema.IBob {
-        readonly object _lock = new object();
-        Schema.ICarol _carol;
+        private readonly object _lock = new object();
+        private Schema.ICarol _carol;
+        private int _count = 1;
 
-        // do @0 (msg :Text);
-        public async Task Do(string msg, CancellationToken cancellationToken_ = default) {
-            Console.WriteLine("@Bob::do | msg: " + msg);
+        // act @0 (msg :Text);
+        public async Task Act(string msg, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Bob::act | msg: " + msg);
             if(_carol != null) {
-                Console.WriteLine("@Bob::do | sending do(msg) to Carol");
-                await _carol.Do("<Bobs DO message to Carol>", cancellationToken_);
+                Console.WriteLine("@Bob::act | sending act(msg) to Carol");
+                await _carol.Act("<Bobs " + _count + ". ACT message to Carol>", cancellationToken_);
+                _count++;
             }   
         }
 
@@ -88,9 +101,9 @@ namespace Ems_ocaps_paper
     }
 
     class Carol : Schema.ICarol {
-        // do @0 (msg :Text);
-        public Task Do(string msg, CancellationToken cancellationToken_ = default) {
-            Console.WriteLine("@Carol::do | msg: " + msg);
+        // act @0 (msg :Text);
+        public Task Act(string msg, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Carol::act | msg: " + msg);
             return Task.CompletedTask;
         }
 
@@ -104,6 +117,80 @@ namespace Ems_ocaps_paper
         }
     }
 
+    class Forwarder : Schema.IForwarder {
+        private readonly object _lock = new object();
+        private Schema.IActor _actor;
+
+        // act @0 (msg :Text);
+        public async Task Act(string msg, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Forwarder::act | msg: " + msg);
+            await _actor?.Act(msg, cancellationToken_);
+        }
+
+        // setActor @0 (a :Actor);
+        public Task SetActor(Schema.IActor actor, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Forwarder::setActor");
+            lock (_lock) {
+                if (actor != _actor) {
+                    _actor?.Dispose();
+                    _actor = actor;
+                }
+            }
+            return Task.CompletedTask;
+        }
+
+        public void Dispose() {}
+
+        static private TcpRpcServer _server;
+        static public void run(int tcpPort) {
+            _server = new TcpRpcServer();
+            _server.Main = new Forwarder();
+            _server.StartAccepting(IPAddress.Any, tcpPort);
+        }
+    }
+
+    class Revoker : Schema.IRevoker {
+        private readonly object _lock = new object();
+        private Schema.IActor _actor;
+
+        // act @0 (msg :Text);
+        public async Task Act(string msg, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Revoker::act | msg: " + msg);
+            if (_actor != null) await _actor.Act(msg, cancellationToken_);
+            else Console.WriteLine("Access to Actor has been revoked.");
+        }
+
+        // setActor @0 (a :Actor);
+        public Task SetActor(Schema.IActor actor, CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Revoker::setActor");
+            lock (_lock) {
+                if (actor != _actor) {
+                    _actor?.Dispose();
+                    _actor = actor;
+                }
+            }
+            return Task.CompletedTask;
+        }
+
+        // revoke @0 ();
+        public Task Revoke(CancellationToken cancellationToken_ = default) {
+            Console.WriteLine("@Revoker::revoke");
+            lock (_lock) {
+                _actor?.Dispose();
+                _actor = null;
+            }
+            return Task.CompletedTask;
+        }
+
+        public void Dispose() {}
+
+        static private TcpRpcServer _server;
+        static public void run(int tcpPort) {
+            _server = new TcpRpcServer();
+            _server.Main = new Revoker();
+            _server.StartAccepting(IPAddress.Any, tcpPort);
+        }
+    }
 
     class Program
     {
@@ -138,13 +225,20 @@ namespace Ems_ocaps_paper
                 Console.WriteLine("@main | sleep for 1s");
                 System.Threading.Thread.Sleep(1000);
 
-                Console.WriteLine("@main | sending set(bob,carol) to Alice");
-                await alice.Set(Proxy.Share(bob), carol);
-                Console.WriteLine("@main | sending do(msg) to Alice");
-                await alice.Do("<mains DO message to Alice>");
+                Console.WriteLine("@main | sending setBobAndCarol(bob,carol) to Alice");
+                await alice.SetBobAndCarol(Proxy.Share(bob), carol);
+                Console.WriteLine("@main | sending act(msg) to Alice");
+                await alice.Act("<mains ACT message to Alice>");
 
-                Console.WriteLine("main | sending do(msg) to Bob");
-                await bob.Do("<mains DO message to Bob>");
+                Console.WriteLine("@main | sending act(msg) to Bob");
+                await bob.Act("<mains 1st ACT message to Bob>");
+                await bob.Act("<mains 2nd ACT message to Bob>");
+
+                Console.WriteLine("@main | sending revokeCarol to Alice");
+                await alice.RevokeCarol();
+
+                Console.WriteLine("@main | sending act(msg) to Bob");
+                await bob.Act("<mains 3rd ACT message to Bob>");
 
                 //System.Threading.Thread.Sleep(4000);
                 Console.WriteLine("@main | finished");
