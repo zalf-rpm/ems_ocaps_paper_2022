@@ -79,6 +79,7 @@ class Alice(schema.Alice.Server):
         ]).then(lambda _: ())
 
     def revokeCarol_context(self, context): # revokeCarol @1 ();
+        print("@Alice::revokeCarol")
         return self.revoker.revoke().then(lambda _: ())
 
 #------------------------------------------------------------------------------
