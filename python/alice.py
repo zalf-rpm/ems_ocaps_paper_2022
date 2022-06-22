@@ -28,7 +28,8 @@ schema = capnp.load(str(PATH_TO_REPO / "capnp" / "revokable_forwarder.capnp"))
 
 import helper.capnp_async_helpers as async_helpers
 import helper.common as common
-from forwarder_revoker import Forwarder, Revoker
+from forwarder import Forwarder
+from revoker import Revoker
 
 #------------------------------------------------------------------------------
 
@@ -38,55 +39,61 @@ class PlainAlice(schema.Alice.Server):
         self.bob = None
         self.carol = None
 
-    #def do(self, msg, **kwargs): # do @0 (msg :Text);
-    def do_context(self, context): # do @0 (msg :Text);
-        print("@Alice::do | msg:", context.params.msg)
-        print("@Alice::do | sending foo(carol) to Bob")
+    def act_context(self, context): # act @0 (msg :Text);
+        print("@Alice::act | msg:", context.params.msg)
+        print("@Alice::act | sending foo(carol) to Bob")
         if self.bob and self.carol:
             return self.bob.foo(self.carol).then(lambda _: ())
 
-    def set_context(self, context): # set @0 (bob :Bob, carol :Carol);
-        print("@Alice::set")
+    def setBobAndCarol_context(self, context): # setBobAndCarol @0 (bob :Bob, carol :Carol);
+        print("@Alice::setBobAndCarol")
         self.bob = context.params.bob
         self.carol = context.params.carol
 
+    def revokeCarol(self, **kwargs): # revokeCarol @1 ();
+        pass
 
 class Alice(schema.Alice.Server):
 
     def __init__(self):
         self.bob = None
         self.carol = None
-        self.forwarder = None
-        self.revoker = None
+        self.forwarder = schema.Forwarder._new_client(Forwarder())
+        #self.forwarder = Forwarder()
+        self.revoker = schema.Revoker._new_client(Revoker())
+        #self.revoker = Revoker()
 
-    #def do(self, msg, **kwargs): # do @0 (msg :Text);
-    def do_context(self, context): # do @0 (msg :Text);
-        print("@Alice::do | msg:", context.params.msg)
-        print("@Alice::do | sending foo(carol) to Bob")
-        if self.bob and self.carol:
-            return self.bob.foo(self.carol).then(lambda _: ())
+    def act_context(self, context): # act @0 (msg :Text);
+        print("@Alice::act | msg:", context.params.msg)
+        if self.bob and self.carol and self.forwarder:
+            print("@Alice::act | sending foo(forwarder) to Bob")
+            return self.bob.foo(self.forwarder).then(lambda _: ())
 
-    def set_context(self, context): # set @0 (bob :Bob, carol :Carol);
-        print("@Alice::set")
+    def setBobAndCarol_context(self, context): # setBobAndCarol @0 (bob :Bob, carol :Carol);
+        print("@Alice::setBobAndCarol")
         self.bob = context.params.bob
         self.carol = context.params.carol
+        return capnp.join_promises([
+            self.forwarder.setActor(self.revoker), 
+            self.revoker.setActor(self.carol)
+        ]).then(lambda _: ())
 
+    def revokeCarol_context(self, context): # revokeCarol @1 ();
+        return self.revoker.revoke().then(lambda _: ())
 
 #------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
     config = {
-        "actor": "aio",
         "port": "9991",
         "use_asyncio": True,
     }
     common.update_config(config, sys.argv, print_config=False)
 
-    print("@alic.py")
+    print("@alice.py")
     if config["use_asyncio"]:
         asyncio.run(async_helpers.serve_forever(None, config["port"], Alice()))
     else: 
         server = capnp.TwoPartyServer("*:"+config["port"], bootstrap=Alice())
-        capnp.wait_forever()
         capnp.wait_forever()

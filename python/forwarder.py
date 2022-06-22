@@ -19,7 +19,11 @@ import asyncio
 import capnp
 import os
 from pathlib import Path
+import socket
 import sys
+import time
+from threading import Thread
+import subprocess as sp
 
 PATH_TO_REPO = Path(os.path.realpath(__file__)).parent.parent
 if str(PATH_TO_REPO) not in sys.path:
@@ -31,37 +35,38 @@ import helper.common as common
 
 #------------------------------------------------------------------------------
 
-class Bob(schema.Bob.Server):
+class Forwarder(schema.Forwarder.Server):
 
     def __init__(self):
-        self.carol = None
-        self.count = 0
+        self.actor = None
 
     def act_context(self, context): # act @0 (msg :Text);
-        print("@Bob::act | msg:", context.params.msg)
-        if self.carol:
-            print("@Bob::act | sending act(<Bobs ACT message to Carol>) to Carol")
-            self.count += 1
-            return self.carol.act("<Bobs " + str(self.count) + ". ACT message to Carol>").then(lambda _: ())
+        msg = context.params.msg
+        print("@Forwarder::act | msg:", msg)
+        if self.actor:
+            print("@Forwarder::act | forwarding act(", msg, ") to attached actor")
+            return self.actor.act(context.params.msg).then(lambda _: ())
 
-    def foo_context(self, context): # foo @1 (carol :Carol);
-        print("@Bob::foo")
-        self.carol = context.params.carol
+    def setActor_context(self, context): # setActor @0 (a :Actor);
+        print("@Forwarder::setActor")
+        self.actor = context.params.a
 
 #------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
     config = {
-        "port": "9992",
+        "port": "9994",
         "use_asyncio": True,
     }
     common.update_config(config, sys.argv, print_config=False)
 
-    print("@bob.py")
+    print("@forwarder.py")
     if config["use_asyncio"]:
-        asyncio.run(async_helpers.serve_forever(None, config["port"], Bob()))
+        asyncio.run(async_helpers.serve_forever(None, config["port"], Forwarder()))
     else: 
-        server = capnp.TwoPartyServer("*:"+config["port"], bootstrap=Bob())
+        server = capnp.TwoPartyServer("*:"+config["port"], bootstrap=Forwarder())
         capnp.wait_forever()
+
+
 

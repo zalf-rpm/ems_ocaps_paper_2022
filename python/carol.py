@@ -36,25 +36,23 @@ class Carol(schema.Carol.Server):
     def __init__(self):
         pass
 
-    def do(self, msg, **kwargs): # do @0 (msg :Text);
-        print("@Carol::do | msg:", msg)
+    def act_context(self, context): # act @0 (msg :Text);
+        print("@Carol::do | msg:", context.params.msg)
 
 #------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
     config = {
-        "actor": "aio",
         "port": "9993",
         "use_asyncio": True,
     }
     common.update_config(config, sys.argv, print_config=False)
 
-    print("@bob.py")
+    print("@carol.py")
     if config["use_asyncio"]:
         asyncio.run(async_helpers.serve_forever(None, config["port"], Carol()))
     else: 
         server = capnp.TwoPartyServer("*:"+config["port"], bootstrap=Carol())
-        capnp.wait_forever()
         capnp.wait_forever()
 

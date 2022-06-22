@@ -72,7 +72,7 @@ namespace Ems_ocaps_paper
         public async Task Act(string msg, CancellationToken cancellationToken_ = default) {
             Console.WriteLine("@Bob::act | msg: " + msg);
             if(_carol != null) {
-                Console.WriteLine("@Bob::act | sending act(msg) to Carol");
+                Console.WriteLine("@Bob::act | sending act(" + msg + ") to Carol");
                 await _carol.Act("<Bobs " + _count + ". ACT message to Carol>", cancellationToken_);
                 _count++;
             }   
@@ -124,6 +124,7 @@ namespace Ems_ocaps_paper
         // act @0 (msg :Text);
         public async Task Act(string msg, CancellationToken cancellationToken_ = default) {
             Console.WriteLine("@Forwarder::act | msg: " + msg);
+            Console.WriteLine("@Forwarder::act | forwarding act(" + msg + ") to attached actor");
             await _actor?.Act(msg, cancellationToken_);
         }
 
@@ -156,8 +157,11 @@ namespace Ems_ocaps_paper
         // act @0 (msg :Text);
         public async Task Act(string msg, CancellationToken cancellationToken_ = default) {
             Console.WriteLine("@Revoker::act | msg: " + msg);
-            if (_actor != null) await _actor.Act(msg, cancellationToken_);
-            else Console.WriteLine("Access to Actor has been revoked.");
+            if (_actor != null){
+                Console.WriteLine("@Revoker::act | forwarding act(" + msg + ") to attached actor");
+                await _actor.Act(msg, cancellationToken_);
+            }
+            else Console.WriteLine("@Revoker::act | Can't forward act(" + msg + "). Access to actor has been revoked.");
         }
 
         // setActor @0 (a :Actor);
@@ -226,19 +230,19 @@ namespace Ems_ocaps_paper
                 System.Threading.Thread.Sleep(1000);
 
                 Console.WriteLine("@main | sending setBobAndCarol(bob,carol) to Alice");
-                await alice.SetBobAndCarol(Proxy.Share(bob), carol);
+                await alice.SetBobAndCarol(Proxy.Share(bob), Proxy.Share(carol));
                 Console.WriteLine("@main | sending act(msg) to Alice");
                 await alice.Act("<mains ACT message to Alice>");
 
                 Console.WriteLine("@main | sending act(msg) to Bob");
-                await bob.Act("<mains 1st ACT message to Bob>");
-                await bob.Act("<mains 2nd ACT message to Bob>");
+                await bob.Act("<mains 1. ACT message to Bob>");
+                await bob.Act("<mains 2. ACT message to Bob>");
 
                 Console.WriteLine("@main | sending revokeCarol to Alice");
                 await alice.RevokeCarol();
 
                 Console.WriteLine("@main | sending act(msg) to Bob");
-                await bob.Act("<mains 3rd ACT message to Bob>");
+                await bob.Act("<mains 3. ACT message to Bob>");
 
                 //System.Threading.Thread.Sleep(4000);
                 Console.WriteLine("@main | finished");

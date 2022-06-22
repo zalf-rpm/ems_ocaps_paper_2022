@@ -18,18 +18,18 @@
 import time
 import subprocess as sp
 
-#alice_process = sp.Popen(["csharp/bin/Debug/net6.0/revokable_forwarder_example", "actor=alice"])
-alice_process = sp.Popen(["python", "python/alice.py", "use_asyncio=true"])
+alice_process = sp.Popen(["csharp/bin/Debug/net6.0/revokable_forwarder_example", "actor=alice"])
+#alice_process = sp.Popen(["python", "python/alice.py", "use_asyncio=true"])
 
-#bob_process = sp.Popen(["csharp/bin/Debug/net6.0/revokable_forwarder_example", "actor=bob"])
-bob_process = sp.Popen(["python", "python/bob.py", "use_asyncio=true"])
+bob_process = sp.Popen(["csharp/bin/Debug/net6.0/revokable_forwarder_example", "actor=bob"])
+#bob_process = sp.Popen(["python", "python/bob.py", "use_asyncio=true"])
 
-#carol_process = sp.Popen(["csharp/bin/Debug/net6.0/revokable_forwarder_example", "actor=carol"])
-carol_process = sp.Popen(["python", "python/carol.py", "use_asyncio=true"])
+carol_process = sp.Popen(["csharp/bin/Debug/net6.0/revokable_forwarder_example", "actor=carol"])
+#carol_process = sp.Popen(["python", "python/carol.py", "use_asyncio=true"])
 time.sleep(2)
 
 main_process = sp.Popen(["csharp/bin/Debug/net6.0/revokable_forwarder_example", "actor=main"])
-#main_process = sp.Popen(["python", "python/revokable_forwarder_example.py", "actor=main", "use_asyncio=true"])
+#main_process = sp.Popen(["python", "python/revokable_forwarder_example.py", "actor=main", "use_asyncio=false"])
 main_process.wait()
 
 alice_process.terminate()

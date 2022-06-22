@@ -31,17 +31,15 @@ if str(PATH_TO_REPO) not in sys.path:
     sys.path.insert(1, str(PATH_TO_REPO))
 schema = capnp.load(str(PATH_TO_REPO / "capnp" / "revokable_forwarder.capnp"))
 
-import capnp_async_helpers as async_helpers
+import helper.capnp_async_helpers as async_helpers
 
 # for the multithreading example we need support to for eventloops in every single thread
 # this removes the old single threaded one and creates a new one for the main thread with multithreading support
 capnp.reset_event_loop(ignore_errors=False, threaded=True)
 
-from alice import Alice
+from alice import Alice, PlainAlice
 from bob import Bob
 from carol import Carol
-#from forwarder_revoker import Forwarder, Revoker
-
 
 def run_alice(s, aio=False):
     print("@run_alice")
@@ -104,12 +102,19 @@ if __name__ == '__main__':
         print("@main | sleep for 1s")
         time.sleep(1)
 
-        print("@main | sending do(msg) to Alice")
-        alice.set(bob, carol)
-        alice.do("<mains DO message to Alice>").wait()
+        print("@main | sending act(msg) to Alice")
+        alice.setBobAndCarol(bob, carol).wait()
+        alice.act("<mains ACT message to Alice>").wait()
 
-        print("@main | sending do(msg) to Bob")
-        bob.do("<mains DO message to Bob>").wait()
+        print("@main | sending act(msg) to Bob")
+        bob.act("<mains 1. ACT message to Bob>").wait()
+        bob.act("<mains 2. ACT message to Bob>").wait()
+
+        print("@main | sending revokeCarol to Alice")
+        alice.revokeCarol().wait()
+
+        print("@main | sending act(msg) to Bob")
+        bob.act("<mains 3. ACT message to Bob>").wait()
 
         time.sleep(2)
         print("@main | finished")
@@ -147,11 +152,11 @@ if __name__ == '__main__':
         
         print("@main | sending set(bob,carol) to Alice")
         alice.set(bob, carol).wait()
-        print("@main | sending do(msg) to Alice")
-        alice.do("<mains DO message to Alice>").wait()
+        print("@main | sending act(msg) to Alice")
+        alice.act("<mains ACT message to Alice>").wait()
 
-        print("@main | sending do(msg) to Bob")
-        bob.do("<mains DO message to Bob>").wait()
+        print("@main | sending act(msg) to Bob")
+        bob.act("<mains ACT message to Bob>").wait()
 
         time.sleep(2)
         if not threaded:

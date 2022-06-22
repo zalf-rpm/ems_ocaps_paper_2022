@@ -33,33 +33,45 @@ schema = capnp.load(str(PATH_TO_REPO / "capnp" / "revokable_forwarder.capnp"))
 import helper.capnp_async_helpers as async_helpers
 import helper.common as common
 
-
 #------------------------------------------------------------------------------
-
-class Forwarder(schema.Forwarder.Server):
-
-    def __init__(self):
-        self.revoker = None
-
-    def do(self, **kwargs): # do @0 ();
-        pass
-
-    def set_context(self, context): # set @0 (r :Revoker);
-        print("@Forwarder::set")
-        self.revoker = context.params.r
 
 class Revoker(schema.Revoker.Server):
 
     def __init__(self):
-        self.carol = None
+        self.actor = None
 
-    def do(self, **kwargs): # do @0 ();
-        pass
+    def act_context(self, context): # act @0 (msg :Text);
+        msg = context.params.msg
+        print("@Revoker::act | msg:", msg)
+        if self.actor:
+            print("@Revoker::act | forwarding act(", msg, ") to attached actor")
+        else:
+            print("@Revoker::act | Can't forward act(", msg, "). Access to actor has been revoked.")
 
-    def set_context(self, context): # set @0 (carol :Carol);
-        print("@Revoker::set")
-        self.carol = context.params.carol
+    def setActor_context(self, context): # setActor @0 (a :Actor);
+        print("@Revoker::setActor")
+        self.actor = context.params.a
 
+    def revoke_context(self, context): # revoke @0 ();
+        print("@Revoker::revoke")
+        self.actor = None
+
+#------------------------------------------------------------------------------
+
+if __name__ == '__main__':
+
+    config = {
+        "port": "9995",
+        "use_asyncio": True,
+    }
+    common.update_config(config, sys.argv, print_config=False)
+
+    print("@forwarder_revoker.py")
+    if config["use_asyncio"]:
+        asyncio.run(async_helpers.serve_forever(None, config["port"], Revoker()))
+    else: 
+        server = capnp.TwoPartyServer("*:"+config["port"], bootstrap=Revoker())
+        capnp.wait_forever()
 
 
 
