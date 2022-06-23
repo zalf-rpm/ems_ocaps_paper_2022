@@ -3,10 +3,6 @@ project(ems_ocaps_paper)
 
 set(MT_RUNTIME_LIB 1)
 
-#add_subdirectory(../util/tools/date util/date)
-#add_subdirectory(../../../../util/tools/helpers util/helpers)
-#add_subdirectory(../util/tools/debug util/debug)
-
 #set absolute filenames (to resolve .. in paths)
 macro(set_absolute_path var_name path)
 	get_filename_component(toAbsPath ${path} ABSOLUTE)
@@ -78,6 +74,7 @@ find_package(CapnProto CONFIG REQUIRED)
 
 set(CAPNPC_SRC_PREFIX ${CAPNP_SCHEMAS_DIR})
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS 
+${CAPNP_SCHEMAS_DIR}/common.capnp
 ${CAPNP_SCHEMAS_DIR}/persistence.capnp
 ${CAPNP_SCHEMAS_DIR}/revokable_forwarder.capnp
 )
@@ -87,8 +84,10 @@ message(STATUS "CAPNP_SRCS: " "${CAPNP_SRCS}")
 #------------------------------------------------------------------------------
 
 # create Aice
-set(ALICE_SOURCE 
-	alice_main.cpp
+set(SOURCE
+	revokable_forwarder_example_main.cpp
+	actors.h
+	actors.cpp
 	common.h
 	common.cpp
 	rpc-connections.h
@@ -96,8 +95,8 @@ set(ALICE_SOURCE
 	${CAPNP_HDRS}
 	${CAPNP_SRCS}
 )
-add_executable(alice ${ALICE_SOURCE})
-target_link_libraries(alice
+add_executable(revokable_forwarder_example ${SOURCE})
+target_link_libraries(revokable_forwarder_example
 	${CMAKE_THREAD_LIBS_INIT}
 	${CMAKE_DL_LIBS}
 	CapnProto::capnp
@@ -105,11 +104,10 @@ target_link_libraries(alice
 	CapnProto::capnp-rpc
 	CapnProto::kj
 	CapnProto::kj-async
-	helpers_lib
 )
-target_include_directories(alice PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(revokable_forwarder_example PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 if (MSVC)
-	target_compile_options(alice PRIVATE "/MT$<$<CONFIG:Debug>:d>")
+	target_compile_options(revokable_forwarder_example PRIVATE "/MT$<$<CONFIG:Debug>:d>")
 endif()
 
 #------------------------------------------------------------------------------

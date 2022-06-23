@@ -101,9 +101,10 @@ if __name__ == '__main__':
 
         print("@main | sleep for 1s")
         time.sleep(1)
-
-        print("@main | sending act(msg) to Alice")
+        
+        print("@main | sending setBobAndCarol(bob,carol) to Alice")
         alice.setBobAndCarol(bob, carol).wait()
+        print("@main | sending act(msg) to Alice")
         alice.act("<mains ACT message to Alice>").wait()
 
         print("@main | sending act(msg) to Bob")
@@ -114,7 +115,10 @@ if __name__ == '__main__':
         alice.revokeCarol().wait()
 
         print("@main | sending act(msg) to Bob")
-        bob.act("<mains 3. ACT message to Bob>").wait()
+        try:
+            bob.act("<mains 3. ACT message to Bob>").wait()
+        except Exception:
+            print("@main | Couldn't send msg: <mains 3. ACT message to Bob>")
 
         time.sleep(2)
         print("@main | finished")

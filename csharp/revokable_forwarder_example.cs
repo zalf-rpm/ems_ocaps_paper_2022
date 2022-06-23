@@ -242,9 +242,13 @@ namespace Ems_ocaps_paper
                 await alice.RevokeCarol();
 
                 Console.WriteLine("@main | sending act(msg) to Bob");
-                await bob.Act("<mains 3. ACT message to Bob>");
+                try {
+                    await bob.Act("<mains 3. ACT message to Bob>");
+                } catch(Capnp.Rpc.RpcException) {
+                    Console.WriteLine("@main | Couldn't send msg: <mains 3. ACT message to Bob>");
+                }
 
-                //System.Threading.Thread.Sleep(4000);
+                System.Threading.Thread.Sleep(2000);
                 Console.WriteLine("@main | finished");
 
                 //while (true) System.Threading.Thread.Sleep(1000); 
