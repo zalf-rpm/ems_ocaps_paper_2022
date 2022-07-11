@@ -16,7 +16,9 @@ __requirements__
 
 * run Python example
 
+```shell
     python revokable_forwarder_example_aio.py a=py b=py c=py m=py
+```
 
 ### C#
 
@@ -40,28 +42,38 @@ __installation__
 
 * checkout this repository and dependencies
 
+```shell
     git clone https://github.com/zalf-rpm/ems_ocaps_paper_2022.git
     git clone https://github.com/Microsoft/vcpkg.git
+```
 
 * build vcpkg
 
+```shell
     cd vcpkg
     ./bootstrap-vcpkg.sh
+```
 
 * build Cap'n Proto
 
+```shell
     ./vcpkg install capnproto:x64-linux
+```
 
 * build cpp code
 
+```shell
     cd ems_ocaps_paper_2022
     sh init_cmake_linux_debug.sh
     cd _cmake_debug
     make
+```
 
 * run cpp example
 
+```shell
     python revokable_forwarder_example_aio.py a=cpp b=cpp c=cpp m=cpp
+```
 
 
 ## Examples
